@@ -1,0 +1,8 @@
+{
+  "bind_addr": "0.0.0.0",
+  "port": 18789,
+  "data_dir": "/root/.openclaw/data",
+  "log_level": "info",
+  "standalone": true,
+  "session_secret": ""
+}

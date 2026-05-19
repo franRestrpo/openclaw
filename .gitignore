@@ -1,0 +1,32 @@
+# Environment (contains secrets)
+.env
+.env.local
+.env.*.local
+
+# Docker / OS
+.DS_Store
+thumbs.db
+*.log
+
+# OpenClaw Data (Persistent)
+openclaw/data/
+openclaw/*.db
+openclaw/*.db-journal
+
+# Traefik certificates (dynamic)
+traefik/acme.json
+
+# OpenClaw auth profile secrets
+openclaw-auth-profile-secrets/
+
+# OpenClaw workspace (agent files)
+openclaw/workspace/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS temporary files
+*~
