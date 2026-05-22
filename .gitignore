@@ -27,8 +27,8 @@ openclaw/identity/
 openclaw/credentials/
 openclaw/tools/
 
-# Traefik certificates (dynamic)
-traefik/acme.json
+# Traefik certificates (dynamic) - acme.json tracked as template
+# traefik/acme.json
 traefik/acme.json.backup
 
 # OpenClaw auth profile secrets
