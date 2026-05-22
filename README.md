@@ -1,184 +1,182 @@
 # OpenClaw
 
-OpenClaw is an open-source AI agent platform that allows you to run and manage AI assistants locally or in the cloud.
+OpenClaw es una plataforma de agentes de IA de código abierto que permite ejecutar y gestionar asistentes de IA de forma local o en la nube.
 
-## Table of Contents
-- [Introduction](#introduction)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running OpenClaw](#running-openclaw)
-- [Accessing the Services](#accessing-the-services)
-- [Stopping and Cleaning Up](#stopping-and-cleaning-up)
-- [Updating OpenClaw](#updating-openclaw)
-- [Backup and Restore](#backup-and-restore)
-- [Troubleshooting](#troubleshooting)
-- [Additional Resources](#additional-resources)
+## Tabla de Contenidos
+- [Introducción](#introducción)
+- [Requisitos Previos](#requisitos-previos)
+- [Instalación](#instalación)
+- [Configuración](#configuración)
+- [Ejecutar OpenClaw](#ejecutar-openclaw)
+- [Acceder a los Servicios](#acceder-a-los-servicios)
+- [Detener y Limpiar](#detener-y-limpiar)
+- [Actualizar OpenClaw](#actualizar-openclaw)
+- [Backup y Restauración](#backup-y-restauración)
+- [Solución de Problemas](#solución-de-problemas)
+- [Recursos Adicionales](#recursos-adicionales)
 
-## Introduction
+## Introducción
 
-This documentation provides instructions for installing and configuring OpenClaw using Docker Compose. OpenClaw consists of several services:
-- **Traefik**: Reverse proxy and load balancer
-- **OpenClaw Gateway**: Main API gateway for the OpenClaw platform
-- **OpenClaw CLI**: Command-line interface for interacting with OpenClaw
-- **Cloudflared** (optional): Cloudflare tunnel for exposing services securely
+Esta documentación proporciona instrucciones para instalar y configurar OpenClaw usando Docker Compose. OpenClaw consiste en varios servicios:
+- **Traefik**: Proxy inverso, balanceador de carga y gestor de certificados TLS
+- **OpenClaw Gateway**: Puerta de enlace principal de la API para la plataforma OpenClaw
+- **OpenClaw CLI**: Interfaz de línea de comandos para interactuar con OpenClaw
 
-## Prerequisites
+## Requisitos Previos
 
-Before you begin, ensure you have the following installed:
-- [Docker Engine](https://docs.docker.com/engine/install/) (version 20.10 or later)
-- [Docker Compose](https://docs.docker.com/compose/install/) (version 2.0 or later)
-- Git (for cloning the repository, if applicable)
+Antes de comenzar, asegúrate de tener instalado lo siguiente:
+- [Docker Engine](https://docs.docker.com/engine/install/) (versión 20.10 o superior)
+- [Docker Compose](https://docs.docker.com/compose/install/) (versión 2.0 o superior)
+- Git (para clonar el repositorio, si aplica)
 
-## Installation
+## Instalación
 
-1. **Clone the repository** (if you haven't already):
+1. **Clonar el repositorio** (si aún no lo has hecho):
    ```bash
    git clone https://github.com/openclaw/openclaw.git
    cd openclaw
    ```
 
-2. **Copy the example environment file** and configure it:
+2. **Copiar el archivo de entorno de ejemplo** y configurarlo:
    ```bash
-   cp .env.example .env   # If .env.example exists, otherwise create .env manually
+   cp .env.example .env   # Si .env.example existe, de lo contrario crear .env manualmente
    ```
-   Note: If there's no `.env.example`, you can create a `.env` file based on the variables in the current `.env` file, but be sure to replace sensitive values with your own.
+   Nota: Si no hay `.env.example`, puedes crear un archivo `.env` basado en las variables del archivo `.env` actual, pero asegúrate de reemplazar los valores sensibles con los tuyos.
 
-3. **Configure the `.env` file**:
-   - Set `DOMAIN_NAME` to your desired domain (e.g., `openclaw.example.com`).
-   - Set `ACME_EMAIL` for Let's Encrypt certificates (if using HTTPS).
-   - Set `TRAEFIK_DASHBOARD_AUTH` for securing the Traefik dashboard (format: `user:hashed_password`, generate with `htpasswd -nb user password`).
-   - Set at least one API key for a model provider (e.g., `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.).
-   - Adjust other variables as needed (see the `.env` file for comments).
+3. **Configurar el archivo `.env`**:
+   - Establece `DOMAIN_NAME` con tu dominio deseado (ej. `openclaw.example.com`).
+   - Establece `ACME_EMAIL` para los certificados de Let's Encrypt.
+   - Establece `TRAEFIK_DASHBOARD_AUTH` para proteger el dashboard de Traefik (formato: `usuario:contraseña_hash`, genera con `htpasswd -nb usuario contraseña`).
+   - Configura al menos una API key de un proveedor de modelos (ej. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.).
+   - Ajusta otras variables según sea necesario (consulta el archivo `.env` para ver los comentarios).
 
-## Configuration
+## Configuración
 
-### Environment Variables
+### Variables de Entorno
 
-The `.env` file contains all configuration variables. Here are the most important ones:
+El archivo `.env` contiene todas las variables de configuración. Aquí están las más importantes:
 
-| Variable | Description | Example |
+| Variable | Descripción | Ejemplo |
 |----------|-------------|---------|
-| `DOMAIN_NAME` | The domain name for accessing OpenClaw | `openclaw.example.com` |
-| `TIMEZONE` | Server timezone | `America/Bogota` |
-| `OPENCLAW_TZ` | OpenClaw timezone (usually same as TIMEZONE) | `America/Bogota` |
-| `OPENCLAW_GATEWAY_TOKEN` | Secret token for gateway authentication | `your_secret_token_here` |
-| `ACME_EMAIL` | Email for Let's Encrypt certificates | `admin@example.com` |
-| `TRAEFIK_DASHBOARD_AUTH` | Traefik dashboard basic auth (user:hash) | `admin:$apr1$...` |
-| `CF_TUNNEL_TOKEN` | Cloudflare tunnel token (optional) | `eyJ...` |
-| `OPENAI_API_KEY` | OpenAI API key (if using OpenAI models) | `sk-...` |
-| `ANTHROPIC_API_KEY` | Anthropic API key (if using Claude models) | `sk-ant-...` |
-| `GEMINI_API_KEY` | Google Gemini API key | `AI...` |
-| `MINIMAX_API_KEY` | MiniMax API key | `sk-cp-...` |
+| `DOMAIN_NAME` | El nombre de dominio para acceder a OpenClaw | `openclaw.example.com` |
+| `TIMEZONE` | Zona horaria del servidor | `America/Bogota` |
+| `OPENCLAW_TZ` | Zona horaria de OpenClaw (generalmente igual a TIMEZONE) | `America/Bogota` |
+| `OPENCLAW_GATEWAY_TOKEN` | Token secreto para autenticación del gateway | `tu_token_secreto_aqui` |
+| `ACME_EMAIL` | Email para certificados Let's Encrypt | `admin@example.com` |
+| `TRAEFIK_DASHBOARD_AUTH` | Auth básica del dashboard de Traefik (usuario:hash) | `admin:$apr1$...` |
+| `OPENAI_API_KEY` | API key de OpenAI (si usas modelos de OpenAI) | `sk-...` |
+| `ANTHROPIC_API_KEY` | API key de Anthropic (si usas modelos de Claude) | `sk-ant-...` |
+| `GEMINI_API_KEY` | API key de Google Gemini | `AI...` |
+| `MINIMAX_API_KEY` | API key de MiniMax | `sk-cp-...` |
 
-### Volumes and Persistent Data
+### Volúmenes y Datos Persistentes
 
-OpenClaw uses Docker volumes for persistent data:
-- `openclaw/data/` - Application data
-- `openclaw/workspace/` - Agent workspace
-- `openclaw-auth-profile-secrets/` - Authentication secrets
-- `traefik/acme.json` - TLS certificates
+OpenClaw usa volúmenes Docker para datos persistentes:
+- `openclaw/` - Datos de la aplicación y configuración
+- `openclaw/workspace/` - Espacio de trabajo del agente
+- `openclaw-auth-profile-secrets/` - Secretos de autenticación
+- `traefik/acme.json` - Certificados TLS
 
-These directories are bind-mounted from the host, so your data persists between container restarts.
+Estos directorios están montados desde el host, por lo que tus datos persisten entre reinicios de contenedores.
 
-## Running OpenClaw
+## Ejecutar OpenClaw
 
-1. **Start the services**:
+1. **Iniciar los servicios**:
    ```bash
    docker compose up -d
    ```
-   This will start all defined services in detached mode.
+   Esto iniciará todos los servicios definidos en modo detached.
 
-2. **Check the status**:
+2. **Verificar el estado**:
    ```bash
    docker compose ps
    ```
-   You should see all services as "healthy" or "starting".
+   Deberías ver todos los servicios como "healthy" o "starting".
 
-3. **View logs**:
+3. **Ver los logs**:
    ```bash
    docker compose logs -f
    ```
-   Or for a specific service:
+   O para un servicio específico:
    ```bash
    docker compose logs -f openclaw-gateway
    ```
 
-## Accessing the Services
+## Acceder a los Servicios
 
-Once the services are running:
-- **OpenClaw Gateway**: Access via `https://${DOMAIN_NAME}` (or `http://localhost:18789` for local access without Traefik)
-- **Traefik Dashboard**: Access via `https://traefik.${DOMAIN_NAME}` (requires `TRAEFIK_DASHBOARD_AUTH` to be set)
-- **OpenClaw CLI**: You can run commands using the `openclaw-cli` service:
+Una vez que los servicios estén funcionando:
+- **OpenClaw Gateway**: Accede vía `https://${DOMAIN_NAME}` (o `http://localhost:18789` para acceso local sin Traefik)
+- **Dashboard de Traefik**: Accede vía `https://traefik.${DOMAIN_NAME}` (requiere que `TRAEFIK_DASHBOARD_AUTH` esté configurado)
+- **OpenClaw CLI**: Puedes ejecutar comandos usando el servicio `openclaw-cli`:
   ```bash
-  docker compose run --rm openclaw-cli your-command-here
+  docker compose run --rm openclaw-cli tu-comando-aqui
   ```
 
-## Stopping and Cleaning Up
+## Detener y Limpiar
 
-- **Stop all services**:
+- **Detener todos los servicios**:
   ```bash
   docker compose down
   ```
 
-- **Stop and remove volumes** (WARNING: This will delete all persistent data!):
+- **Detener y eliminar volúmenes** (ADVERTENCIA: ¡Esto eliminará todos los datos persistentes!):
   ```bash
   docker compose down -v
   ```
 
-## Updating OpenClaw
+## Actualizar OpenClaw
 
-To update to the latest version:
+Para actualizar a la última versión:
 ```bash
-docker compose pull   # Pull latest images
-docker compose up -d  # Recreate containers with new images
+docker compose pull   # Descargar últimas imágenes
+docker compose up -d   # Recrear contenedores con nuevas imágenes
 ```
 
-## Backup and Restore
+## Backup y Restauración
 
 ### Backup
-To backup your OpenClaw data, simply copy the following directories:
+Para hacer backup de tus datos de OpenClaw, simplemente copia los siguientes directorios:
 - `openclaw/`
 - `openclaw-auth-profile-secrets/`
 - `traefik/acme.json`
-- `.env` (contains configuration but also secrets - handle securely)
+- `.env` (contiene configuración pero también secretos - maneja con cuidado)
 
-### Restore
-1. Stop OpenClaw: `docker compose down`
-2. Restore the directories listed above to their original locations.
-3. Start OpenClaw: `docker compose up -d`
+### Restauración
+1. Detener OpenClaw: `docker compose down`
+2. Restaurar los directorios mencionados a sus ubicaciones originales.
+3. Iniciar OpenClaw: `docker compose up -d`
 
-## Troubleshooting
+## Solución de Problemas
 
-### Common Issues
+### Problemas Comunes
 
-1. **Services not starting healthy**:
-   - Check logs: `docker compose logs -f <service_name>`
-   - Ensure required environment variables are set in `.env`
-   - Verify port availability (ports 80, 443, 18789, 18790)
+1. **Servicios no iniciando correctamente**:
+   - Revisar logs: `docker compose logs -f <nombre_servicio>`
+   - Verificar que las variables de entorno requeridas estén configuradas en `.env`
+   - Confirmar disponibilidad de puertos (80, 443, 18789, 18790)
 
-2. **HTTPS/TLS issues**:
-   - Check that `ACME_EMAIL` is set correctly in `.env`
-   - Ensure ports 80 and 443 are accessible from the internet (for Let's Encrypt validation)
-   - Check Traefik logs for certificate issuance errors
+2. **Problemas de HTTPS/TLS**:
+   - Verificar que `ACME_EMAIL` esté correctamente configurado en `.env`
+   - Asegurar que los puertos 80 y 443 sean accesibles desde internet (para validación de Let's Encrypt)
+   - Revisar logs de Traefik para errores de emisión de certificados
 
-3. **Authentication problems**:
-   - Verify `OPENCLAW_GATEWAY_TOKEN` in both `.env` and `openclaw/openclaw.json` match
-   - Check that `OPENCLAW_GATEWAY_BIND` is set appropriately (`loopback` for local-only, `lan` for network access)
+3. **Problemas de autenticación**:
+   - Verificar que `OPENCLAW_GATEWAY_TOKEN` en `.env` y `openclaw/openclaw.json` coincidan
+   - Comprobar que `OPENCLAW_GATEWAY_BIND` esté configurado apropiadamente (`loopback` para solo local, `lan` para acceso de red)
 
-### Getting Help
+### Obtener Ayuda
 
-If you encounter issues not covered here:
-- Check the OpenClaw documentation: https://docs.openclaw.dev
-- Visit the OpenClaw GitHub repository: https://github.com/openclaw/openclaw
-- Open an issue on GitHub with details of your problem
+Si encuentras problemas no cubiertos aquí:
+- Revisar la documentación de OpenClaw: https://docs.openclaw.dev
+- Visitar el repositorio de GitHub de OpenClaw: https://github.com/openclaw/openclaw
+- Abrir un issue en GitHub con detalles de tu problema
 
-## Additional Resources
+## Recursos Adicionales
 
-- [OpenClaw GitHub Repository](https://github.com/openclaw/openclaw)
-- [OpenClaw Documentation](https://docs.openclaw.dev)
-- [Docker Documentation](https://docs.docker.com/)
-- [Docker Compose Documentation](https://docs.docker.com/compose/)
+- [Repositorio de GitHub de OpenClaw](https://github.com/openclaw/openclaw)
+- [Documentación de OpenClaw](https://docs.openclaw.dev)
+- [Documentación de Docker](https://docs.docker.com/)
+- [Documentación de Docker Compose](https://docs.docker.com/compose/)
 
 ---
-*Last updated: May 21, 2026*
+*Última actualización: 21 de Mayo de 2026*

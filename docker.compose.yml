@@ -15,7 +15,6 @@ services:
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
       - --entrypoints.websecure.address=:443
-      - --serversTransport.insecureSkipVerify=false
       - --log.level=INFO
       - --api.dashboard=true
       - --certificatesresolvers.myresolver.acme.httpchallenge=true
@@ -23,8 +22,8 @@ services:
       - --certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.myresolver.acme.storage=/etc/traefik/acme.json
     ports:
-      - "127.0.0.1:80:80"
-      - "127.0.0.1:443:443"
+      - "80:80"
+      - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/acme.json:/etc/traefik/acme.json
@@ -191,29 +190,6 @@ services:
     entrypoint: ["node", "dist/index.js"]
     depends_on:
       - openclaw-gateway
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: cloudflared
-    restart: unless-stopped
-    depends_on:
-      traefik:
-        condition: service_healthy
-      openclaw-gateway:
-        condition: service_healthy
-    command:
-      - tunnel
-      - --protocol
-      - http2
-      - --metrics
-      - 127.0.0.1:8080
-      - run
-    environment:
-      - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}
-    networks:
-      - proxy
-    security_opt:
-      - no-new-privileges:true
 
 networks:
   proxy:
