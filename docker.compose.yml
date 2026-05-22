@@ -29,7 +29,7 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/acme.json:/etc/traefik/acme.json:rw
+      - traefik-acme:/etc/traefik/acme.json:rw
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 15s
