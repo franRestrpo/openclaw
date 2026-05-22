@@ -26,7 +26,7 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/acme.json:/etc/traefik/acme.json
+      - traefik-acme:/etc/traefik/acme.json
     security_opt:
       - no-new-privileges:true
     networks:
@@ -194,3 +194,8 @@ services:
 networks:
   proxy:
     external: true
+
+volumes:
+  traefik-acme:
+    name: traefik-acme
+    driver: local
