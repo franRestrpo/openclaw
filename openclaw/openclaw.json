@@ -1,8 +1,139 @@
 {
-  "bind_addr": "0.0.0.0",
-  "port": 18789,
-  "data_dir": "/root/.openclaw/data",
-  "log_level": "info",
-  "standalone": true,
-  "session_secret": ""
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "allowRealIpFallback": false,
+    "controlUi": {
+      "allowInsecureAuth": false,
+      "allowedOrigins": [
+        "https://agenteoc.tecno-linux.com/"
+      ]
+    },
+    "auth": {
+      "mode": "token",
+      "token": "5559067ae57d8baaabb0f3ced5ccae946635665ca04590aee181bfa81de82bbaf8dd707f901f5a2f4c4657a118699e52fda401ae9e0af21dc60bd283045f9f1c",
+      "rateLimit": {
+        "maxAttempts": 10,
+        "windowMs": 60000,
+        "lockoutMs": 300000
+      }
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    },
+    "nodes": {
+      "denyCommands": [
+        "camera.snap",
+        "camera.clip",
+        "screen.record",
+        "contacts.add",
+        "calendar.add",
+        "reminders.add",
+        "sms.send"
+      ]
+    }
+  },
+  "logging": {
+    "level": "info"
+  },
+  "tools": {
+    "fs": {
+      "workspaceOnly": true
+    },
+    "profile": "coding"
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "minimax/MiniMax-M2.7",
+        "fallbacks": []
+      },
+      "sandbox": {
+        "mode": "off"
+      },
+      "workspace": "/home/node/.openclaw/workspace"
+    }
+  },
+  "models": {
+    "providers": {
+      "minimax": {
+        "api": "anthropic-messages",
+        "apiKey": "${MINIMAX_API_KEY}",
+        "baseUrl": "https://api.minimax.io/v1",
+        "models": [
+          {
+            "id": "MiniMax-M2.7",
+            "name": "MiniMax M2.7",
+            "contextWindow": 200000,
+            "maxTokens": 8192,
+            "input": [
+              "text"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "plugins": {
+    "entries": {
+      "telegram": {
+        "enabled": true
+      }
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "groups": {
+        "*": {
+          "requireMention": true
+        }
+      },
+      "botToken": "7654973738:AAHkwNsqzhaDBsEw708motkxkkWobaXPFTE"
+    }
+  },
+  "skills": {
+    "install": {
+      "nodeManager": "npm"
+    }
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "session-memory": {
+          "enabled": true
+        },
+        "compaction-notifier": {
+          "enabled": true
+        },
+        "command-logger": {
+          "enabled": true
+        },
+        "bootstrap-extra-files": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "wizard": {
+    "lastRunAt": "2026-05-21T17:31:43.050Z",
+    "lastRunVersion": "2026.5.18",
+    "lastRunCommand": "onboard",
+    "lastRunMode": "local"
+  },
+  "meta": {
+    "lastTouchedVersion": "2026.5.18",
+    "lastTouchedAt": "2026-05-21T17:40:48.531Z"
+  },
+  "commands": {
+    "ownerAllowFrom": [
+      "telegram:5542963731"
+    ]
+  }
 }

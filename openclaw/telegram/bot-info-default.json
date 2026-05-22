@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "tokenFingerprint": "85214bc67a969ab8",
+  "fetchedAt": "2026-05-21T17:38:21.612Z",
+  "botInfo": {
+    "id": 7654973738,
+    "is_bot": true,
+    "first_name": "automatismo",
+    "username": "fryck_bot",
+    "can_join_groups": true,
+    "can_read_all_group_messages": false,
+    "can_manage_bots": false,
+    "supports_inline_queries": false,
+    "can_connect_to_business": false,
+    "has_main_web_app": false,
+    "has_topics_enabled": false,
+    "allows_users_to_create_topics": false
+  }
+}
