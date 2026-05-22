@@ -3,7 +3,7 @@ services:
   traefik:
     image: traefik:v3.7.1
     container_name: traefik
-    restart: unless-stopped
+    restart: always
     env_file:
       - path: .env
     command:
@@ -17,24 +17,27 @@ services:
       - --entrypoints.websecure.address=:443
       - --log.level=INFO
       - --api.dashboard=true
+      - --accesslog=true
+      - --accesslog.format=json
       - --certificatesresolvers.myresolver.acme.httpchallenge=true
       - --certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web
       - --certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.myresolver.acme.storage=/etc/traefik/acme.json
+      - --certificatesresolvers.myresolver.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - traefik-acme:/etc/traefik/acme.json
+      - traefik-acme:/etc/traefik/acme.json:rw
     security_opt:
       - no-new-privileges:true
     networks:
       - proxy
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
-      interval: 10s
-      timeout: 5s
+      interval: 15s
+      timeout: 3s
       retries: 3
     labels:
       - "traefik.enable=true"
@@ -45,10 +48,19 @@ services:
       - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
       - "traefik.http.routers.dashboard.middlewares=auth"
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
 
   openclaw-gateway:
     image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
     container_name: openclaw-gateway
+    restart: always
     env_file:
       - path: .env
         required: false
@@ -56,11 +68,13 @@ services:
       HOME: /home/node
       OPENCLAW_HOME: /home/node
       TERM: xterm-256color
+      NODE_ENV: production
       OPENCLAW_STATE_DIR: /home/node/.openclaw
       OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
       OPENCLAW_CONFIG_DIR: /home/node/.openclaw
       OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
+      OPENCLAW_SESSION_SECRET: ${OPENCLAW_SESSION_SECRET:-}
       OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
       OPENCLAW_DISABLE_BONJOUR: ${OPENCLAW_DISABLE_BONJOUR:-}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
@@ -74,7 +88,7 @@ services:
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
-      TZ: ${OPENCLAW_TZ:-UTC}
+      TZ: ${OPENCLAW_TZ:-America/Bogota}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
@@ -92,12 +106,10 @@ services:
       DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY:-}
       MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
     volumes:
-      - ${OPENCLAW_CONFIG_DIR:-./openclaw}:/home/node/.openclaw
-      - ${OPENCLAW_WORKSPACE_DIR:-./openclaw/workspace}:/home/node/.openclaw/workspace
-      - ${OPENCLAW_AUTH_PROFILE_SECRET_DIR:-./openclaw-auth-profile-secrets}:/home/node/.config/openclaw
+      - openclaw-config:/home/node/.openclaw:rw
+      - openclaw-secrets:/home/node/.config/openclaw:ro
     cap_drop:
-      - NET_RAW
-      - NET_ADMIN
+      - ALL
     security_opt:
       - no-new-privileges:true
     extra_hosts:
@@ -106,7 +118,6 @@ services:
       - "127.0.0.1:${OPENCLAW_GATEWAY_PORT:-18789}:18789"
       - "127.0.0.1:${OPENCLAW_BRIDGE_PORT:-18790}:18790"
     init: true
-    restart: unless-stopped
     networks:
       - proxy
     depends_on:
@@ -131,10 +142,10 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 40s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.openclaw.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.openclaw.rule=Host(`${SUB_DOMAIN_NAME_GT}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.openclaw.entrypoints=websecure"
       - "traefik.http.routers.openclaw.tls=true"
       - "traefik.http.routers.openclaw.tls.certresolver=myresolver"
@@ -144,27 +155,36 @@ services:
       - "traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true"
       - "traefik.http.middlewares.secure-headers.headers.frameDeny=true"
       - "traefik.http.middlewares.secure-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
-      - "traefik.http.middlewares.secure-headers.headers.contentSecurityPolicy=upgrade-insecure-requests"
+      - "traefik.http.middlewares.secure-headers.headers.contentSecurityPolicy=default-src 'self' https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https://api.minimax.io https://api.anthropic.com https://generativelanguage.googleapis.com"
       - "traefik.http.middlewares.secure-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
       - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
       - "traefik.http.middlewares.rate-limit.ratelimit.burst=50"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   openclaw-cli:
     image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
     container_name: openclaw-cli
     network_mode: "service:openclaw-gateway"
+    restart: always
     env_file:
       - path: .env
         required: false
     cap_drop:
-      - NET_RAW
-      - NET_ADMIN
+      - ALL
     security_opt:
       - no-new-privileges:true
     environment:
       HOME: /home/node
       OPENCLAW_HOME: /home/node
       TERM: xterm-256color
+      NODE_ENV: production
       OPENCLAW_STATE_DIR: /home/node/.openclaw
       OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
       OPENCLAW_CONFIG_DIR: /home/node/.openclaw
@@ -175,15 +195,14 @@ services:
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
-      TZ: ${OPENCLAW_TZ:-UTC}
+      TZ: ${OPENCLAW_TZ:-America/Bogota}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
     volumes:
-      - ${OPENCLAW_CONFIG_DIR:-./openclaw}:/home/node/.openclaw
-      - ${OPENCLAW_WORKSPACE_DIR:-./openclaw/workspace}:/home/node/.openclaw/workspace
-      - ${OPENCLAW_AUTH_PROFILE_SECRET_DIR:-./openclaw-auth-profile-secrets}:/home/node/.config/openclaw
+      - openclaw-config:/home/node/.openclaw:rw
+      - openclaw-secrets:/home/node/.config/openclaw:ro
     stdin_open: true
     tty: true
     init: true
@@ -198,4 +217,10 @@ networks:
 volumes:
   traefik-acme:
     name: traefik-acme
+    driver: local
+  openclaw-config:
+    name: openclaw-config
+    driver: local
+  openclaw-secrets:
+    name: openclaw-secrets
     driver: local
