@@ -1,76 +1,16 @@
-# Environment (contains secrets)
+# Entorno y Secretos
 .env
 .env.local
-.env.*.local
+.env.example
 
-# OpenClaw config (local)
-.openclaw.json
-openclaw/openclaw.json
-
-# Docker / OS
-.DS_Store
-Thumbs.db
-thumbs.db
-docker-compose.override.yml
-
-# OpenClaw Data (Persistent)
-openclaw/data/
-openclaw/*.db
-openclaw/*.db-journal
-openclaw/*.sqlite
-openclaw/*.sqlite3
-openclaw/tasks/
-openclaw/flows/
-openclaw/logs/
-openclaw/sandboxes/
-openclaw/identity/
-openclaw/credentials/
-openclaw/tools/
-
-# Traefik certificates (dynamic) - acme.json tracked as template
-# traefik/acme.json
-traefik/acme.json.backup
-
-# OpenClaw auth profile secrets
+# Datos Persistentes (Ignorados para GitHub)
+openclaw/
+kilo/
 openclaw-auth-profile-secrets/
+traefik/acme.json
+data/
 
-# OpenClaw workspace (agent files)
-openclaw/workspace/
-.openclaw/
-
-# Session files
-openclaw/agents/main/sessions/
-openclaw/sessions/
-openclaw/workspace/memory/
-openclaw/workspace/.openclaw/
-
-# Kilo
-.kilo/
-
-# IDEs and editors
-.vscode/
-.vscode
-.idea/
-*.swp
-*.swo
-*~
-*.bak
-*.tmp
-
-# Build artifacts
-dist/
-build/
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Logs
-logs/
+# Logs y Sistema
 *.log
-
-# Backup files
-openclaw/openclaw.json.bak*
-openclaw/openclaw.json.last-good
-openclaw/update-check.json
+traefik/access-log
+.DS_Store

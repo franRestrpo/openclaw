@@ -37,13 +37,18 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
    cd openclaw
    ```
 
-2. **Copiar el archivo de entorno de ejemplo** y configurarlo:
+2. **Configurar la red externa de Docker**:
+   Puesto que la configuración utiliza una red externa para Traefik, debes crearla antes de iniciar:
    ```bash
-   cp .env.example .env   # Si .env.example existe, de lo contrario crear .env manualmente
+   docker network create proxy
    ```
-   Nota: Si no hay `.env.example`, puedes crear un archivo `.env` basado en las variables del archivo `.env` actual, pero asegúrate de reemplazar los valores sensibles con los tuyos.
 
-3. **Configurar el archivo `.env`**:
+3. **Copiar el archivo de entorno de ejemplo** y configurarlo:
+   ```bash
+   cp .env.example .env
+   ```
+
+4. **Configurar el archivo `.env`**:
    - Establece `DOMAIN_NAME` con tu dominio deseado (ej. `openclaw.example.com`).
    - Establece `ACME_EMAIL` para los certificados de Let's Encrypt.
    - Establece `TRAEFIK_DASHBOARD_AUTH` para proteger el dashboard de Traefik (formato: `usuario:contraseña_hash`, genera con `htpasswd -nb usuario contraseña`).
@@ -59,7 +64,9 @@ El archivo `.env` contiene todas las variables de configuración. Aquí están l
 | Variable | Descripción | Ejemplo |
 |----------|-------------|---------|
 | `DOMAIN_NAME` | El nombre de dominio para acceder a OpenClaw | `openclaw.example.com` |
+| `SUB_DOMAIN_NAME_GT` | Subdominio específico para el Gateway | `gw` |
 | `TIMEZONE` | Zona horaria del servidor | `America/Bogota` |
+| `OPENCLAW_IMAGE` | Imagen de Docker a utilizar | `ghcr.io/openclaw/openclaw:latest` |
 | `OPENCLAW_TZ` | Zona horaria de OpenClaw (generalmente igual a TIMEZONE) | `America/Bogota` |
 | `OPENCLAW_GATEWAY_TOKEN` | Token secreto para autenticación del gateway | `tu_token_secreto_aqui` |
 | `ACME_EMAIL` | Email para certificados Let's Encrypt | `admin@example.com` |

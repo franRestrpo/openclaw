@@ -4,31 +4,30 @@ services:
     image: traefik:v3.7.1
     container_name: traefik
     restart: always
+    env_file:
+      - path: .env
     command:
-      - --ping=true
-      - --api.insecure=false
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=${INTERNAL_NETWORK:-openclaw_proxy}
       - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+
+      # Configuración de Redirección Global HTTP -> HTTPS
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
-      - --entrypoints.web.http.redirections.entrypoint.permanent=true
-      - --entrypoints.websecure.address=:443
-      - --entrypoints.web.transport.respondingTimeouts.idleTimeout=3600
-      - --log.level=${TRAEFIK_LOG_LEVEL:-INFO}
-      - --log.format=common
-      - --accesslog=true
-      - --accesslog.format=json
-      - --api.dashboard=true
+
+      # Configuración del Resolvedor Let's Encrypt (HTTP Challenge)
       - --certificatesresolvers.myresolver.acme.httpchallenge=true
       - --certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web
       - --certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.myresolver.acme.storage=/etc/traefik/acme.json
-      - --certificatesresolvers.myresolver.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
+
+      # Observabilidad
+      - --log.level=INFO
+      - --api.dashboard=true
+      - --api.insecure=false
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/acme.json:/etc/traefik/acme.json:rw
+      - ./traefik/acme.json:/etc/traefik/acme.json
       - ./traefik/traefik.log:/var/log/traefik/traefik.log
       - ./traefik/access-log:/var/log/traefik/access-log
     ports:
@@ -44,31 +43,20 @@ services:
     networks:
       - proxy
     labels:
+      # Exposición segura del Dashboard bajo demanda (Patrón avanzado)
       - "traefik.enable=true"
-      - "traefik.docker.network=${INTERNAL_NETWORK:-openclaw_proxy}"
-      # Redirect all HTTP to HTTPS
-      - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.redirect-https.redirectscheme.permanent=true"
-      - "traefik.http.routers.http-catchall.rule=Host(`{host:.+}`)"
-      - "traefik.http.routers.http-catchall.entrypoints=web"
-      - "traefik.http.routers.http-catchall.middlewares=redirect-https"
-      - "traefik.http.routers.http-catchall.priority=1"
-      # Dashboard labels
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN_NAME}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
-      - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
-      - "traefik.http.routers.dashboard.middlewares=auth"
-      # Basic Auth for dashboard
-      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
+      
+      # Middleware de Autenticación Básica (Protección del Dashboard)
+      - "traefik.http.routers.dashboard.middlewares=auth-dashboard,redirect-dashboard"
+      - "traefik.http.middlewares.auth-dashboard.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
       # Redirect root / to /dashboard/
       - "traefik.http.middlewares.redirect-dashboard.redirectregex.regex=^https?://([^/]+)/?$$"
       - "traefik.http.middlewares.redirect-dashboard.redirectregex.replacement=https://$${1}/dashboard/"
-      - "traefik.http.routers.dashboard-root.rule=Host(`traefik.${DOMAIN_NAME}`) && Path(`/`)"
-      - "traefik.http.routers.dashboard-root.entrypoints=websecure"
-      - "traefik.http.routers.dashboard-root.tls.certresolver=myresolver"
-      - "traefik.http.routers.dashboard-root.middlewares=auth,redirect-dashboard"
     deploy:
       resources:
         limits:
@@ -153,35 +141,28 @@ services:
         "--bind",
         "${OPENCLAW_GATEWAY_BIND:-lan}",
         "--port",
-        "18789",
+        "18789"
       ]
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "node -e \"fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+          "node -e \"fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
         ]
       interval: 30s
       timeout: 5s
       retries: 5
       start_period: 40s
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=${INTERNAL_NETWORK:-openclaw_proxy}"
+      - "traefik.enable=true" # <--- Obligatorio ya que desactivamos la exposición global
+      - "traefik.docker.network=${INTERNAL_NETWORK:-proxy}"
       - "traefik.http.routers.openclaw-gw.rule=Host(`${SUB_DOMAIN_NAME_GT}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.openclaw-gw.entrypoints=websecure"
+      - "traefik.http.routers.openclaw-gw.service=openclaw-service"
+      - "traefik.http.services.openclaw-service.loadbalancer.server.port=18789"
+      # Activación automática de TLS para este servicio mediante Let's Encrypt
       - "traefik.http.routers.openclaw-gw.tls=true"
       - "traefik.http.routers.openclaw-gw.tls.certresolver=myresolver"
-      - "traefik.http.routers.openclaw-gw.middlewares=secure-headers,rate-limit"
-      - "traefik.http.services.openclaw-gw.loadbalancer.server.port=18789"
-      - "traefik.http.middlewares.secure-headers.headers.browserXssFilter=true"
-      - "traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.secure-headers.headers.frameDeny=true"
-      - "traefik.http.middlewares.secure-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
-      - "traefik.http.middlewares.secure-headers.headers.contentSecurityPolicy=default-src 'self' https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https://api.minimax.io https://api.anthropic.com https://generativelanguage.googleapis.com"
-      - "traefik.http.middlewares.secure-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
-      - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
-      - "traefik.http.middlewares.rate-limit.ratelimit.burst=50"
     deploy:
       resources:
         limits:
