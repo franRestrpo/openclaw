@@ -7,6 +7,9 @@ services:
     env_file:
       - path: .env
     command:
+      - --api.dashboard=true
+      - --ping=true
+
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
 
